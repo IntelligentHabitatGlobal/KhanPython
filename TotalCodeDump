@@ -1,0 +1,239 @@
+
+# Course options to choose from for our recommendation.
+cooking = "Molecular Gastronomy"
+music = "Baroque Appreciation"
+art = "DaVinci for Dummies"
+cosmos = "Thermonuclear Equilibrim 101"
+younger_learners = "Fun with shapes"
+general_subject = "Doom scrolling for Italian Brainrot"
+# Collect user attributes to inform our recommendation.
+grade = int(input("What grade are you in? "))
+favorite_subject = \
+    input("Choose a subject {cooking, music, art, math or cosmos} ")
+
+# Make a course recommendation based on the user's attributes.
+rec = ""
+if grade < 6:
+    # Course caters to younger learners.
+    rec = younger_learners
+else:
+    if favorite_subject == "cooking":
+        rec = cooking
+    elif favorite_subject == "music":
+        rec = music
+    elif favorite_subject == "art":
+        rec = art
+    elif favorite_subject == "math" or favorite_subject == "cosmos":
+        rec = cosmos
+    else:
+        rec = general_subject
+
+print("We recommend the Khan Academy course: " + rec)
+
+rec = fav_subj("cooking")
+
+
+
+
+
+
+***** DRAW AVATAR  UNIT 3 LESSON 1
+
+
+import avatar
+import random
+
+drawBow = random.randint(1,3)
+drawNose = random.randint(1,2)
+drawMouth = random.randint(1,4)
+
+if drawBow == 2 :
+    avatar.draw_bow()
+
+avatar.draw_eyes("medium")
+
+if drawNose == 1 :
+  avatar.draw_nose("triangle")
+else: 
+  avatar.draw_nose("button")
+
+if drawMouth <= 2 :
+  avatar.draw_mouth("smile")
+elif drawMouth == 3: 
+  avatar.draw_mouth("teeth")
+else:
+  avatar.draw_mouth("neutral")
+    
+if drawBow == 3 :
+    avatar.draw_bow()
+  
+  
+  import random
+
+roll_total = 0
+roll = 0
+
+# Aim for the highest roll total before rolling a 1.
+while roll != 1:
+    roll_total = roll_total + roll
+
+    roll = random.randint(1, 6)
+    print("You rolled a " + str(roll))
+
+print("Your roll streak was " + str(roll_total))
+  
+
+===============
+
+import random
+
+Num_rolls = 0
+
+while Num_rolls < 10:
+    # Roll two six-sided dice.
+    first_die = random.randint(1, 6)
+    second_die = random.randint(1, 6)
+    
+    dice_sum = first_die + second_die
+    print("You rolled a " + str(dice_sum) + "!")
+    Num_rolls += 1
+
+
+
++=================
+
+
+import random
+
+num_cashiers = 1
+
+total_minutes = 5 * 60
+
+waiting_to_order = 0
+waiting_for_food = 0
+
+for minute_count in range(0,total_minutes):
+    # Customers arrive every minute and line up to order.
+    waiting_to_order = waiting_to_order + random.randint(0, 6)
+    
+    # Each cashier can take up to three orders per minute.
+    new_orders = min(num_cashiers * 3, waiting_to_order)
+    
+    # After ordering, customers wait for their food to be made.
+    waiting_to_order = waiting_to_order - new_orders
+    waiting_for_food = waiting_for_food + new_orders
+    
+    print(str(waiting_to_order) + " customers waiting to order.")
+    print(str(waiting_for_food) + " customers waiting for food.")
+
+
+============  Count Total Served =============================
+
+import random
+
+num_cashiers = 1
+
+total_minutes = 5 * 60
+num_cooks = 2
+waiting_to_order = 0
+waiting_for_food = 0
+cust_served = 0
+
+for minute_count in range(0,total_minutes):
+    # Customers arrive every minute and line up to order.
+    waiting_to_order = waiting_to_order + random.randint(0, 6)
+    
+    # Each cashier can take up to three orders per minute.
+    new_orders = min(num_cashiers * 3, waiting_to_order)
+    
+    # After ordering, customers wait for their food to be made.
+    waiting_to_order = waiting_to_order - new_orders
+    waiting_for_food = waiting_for_food + new_orders
+
+    fulfilled_orders = min(num_cooks,waiting_for_food)
+    waiting_for_food -= fulfilled_orders
+    cust_served += fulfilled_orders
+    
+    print(str(waiting_to_order) + " customers waiting to order.")
+    print(str(waiting_for_food) + " customers waiting for food.")
+
+print(str(cust_served) + " customers servered today.")
+
+
+=SUM(BUYS[[#HEADERS],[Cost]])/=SUM(BUYS[[#HEADERS],[Shares]])
+
+
+import random
+
+number = random.randint(1, 100)
+guess = -1
+
+while guess != number:
+  guess = int(input("Guess a number from 1-100: "))
+
+  if guess >= 1 and guess <= 100:
+    if guess > number:
+      print("Guess lower!")
+    elif guess < number:
+      print("Guess higher!")
+	  
+	  
+	  
+	  
+	"""Simulates natural selection in the fictional Neebler population."""
+
+import random
+
+# Starting population with each trait variation.
+small_neeblers = 100
+big_neeblers = 10000
+chance_of_flight = 10
+
+for generations in range(15):
+    print("Generation " + str(generations))
+    print("Starting Population (Small, Big): " \
+      + str(small_neeblers) + ","+str(big_neeblers))  
+    for neebler in range(small_neeblers):
+        chance_of_being_spotted = random.randint(0, 4)
+        might_escape = random.randint(1,100)
+        # Low chance of being spotted by predators since they're small.
+        if  might_escape > chance_of_flight and chance_of_being_spotted == 4:
+            small_neeblers -= 1
+  
+    baby_small_neeblers = 0
+    for neebler in range(small_neeblers):
+        # Smallness trait gets passed to their babies.
+        num_babies = random.randint(0, 3)
+        baby_small_neeblers += num_babies
+        
+    # Babies become the starting population of the next generation.
+    small_neeblers = baby_small_neeblers
+    print("Small Neeblers (Survived,Born): " + \
+         str(neebler) +  "," + str(small_neeblers))  
+
+    for neebler in range(big_neeblers):
+        # bigger chance of being spotted by predators since they're small.
+        chance_of_being_spotted = random.randint(0, 4)
+        if chance_of_being_spotted > 1:
+            big_neeblers = big_neeblers - 1
+ 
+    baby_big_neeblers = 0
+    for neebler in range(big_neeblers):
+        # bigness trait gets passed to their babies.
+        num_babies = random.randint(0, 2)
+        baby_big_neeblers = baby_big_neeblers + num_babies
+    
+    # Babies become the starting population of the next generation.
+    print("Big Neeblers (Survived,Born): " + \
+         str(neebler) +  "," + str(big_neeblers))  
+  
+    print("\n")
+    
+    if small_neeblers == 0 or big_neeblers == 0:
+        print("Population Extinction")
+        break
+		
+		
+		
+	player_hours - {2,11,33,26,55}
+		
