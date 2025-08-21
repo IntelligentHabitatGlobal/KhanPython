@@ -2,7 +2,7 @@
 # Course options to choose from for our recommendation.
 cooking = "Molecular Gastronomy"
 music = "Baroque Appreciation"
-art = "DaVinci for Dummies"
+art = "DaVinci for Dummies" 
 cosmos = "Thermonuclear Equilibrim 101"
 younger_learners = "Fun with shapes"
 general_subject = "Doom scrolling for Italian Brainrot"
