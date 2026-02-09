@@ -1,0 +1,517 @@
+'''
+
+Simple Chess Referee (main.py)
+
+This code was built using public domain code
+
+User inputs starting and ending position.
+Code analyzes move and passes control to opponent if legal
+Code does not understand castling or En Passent
+
+chess.py pasted to bottom of code
+
+
+'''
+from chess import Piece, Pawn, Rook, Bishop, Knight, Queen, King, simulateMove
+
+
+
+
+def clear():
+  print( "\n" * 50)
+
+class Board:
+  def __init__(self): 
+    self.lastMoves = []
+    self.board = []
+    self.pieces = []
+    self.kings = [King('white'), King('black')]
+    self.pieces += [Rook('black'), Knight('black'), Bishop('black'), Queen('black'), self.kings[1], Bishop('black'), Knight('black'), Rook('black')] + [Pawn('black') for _ in range(8)] 
+    self.board.append(self.pieces[:8])
+    self.board.append(self.pieces[8:16])
+
+    for i in range(4):
+      self.board.append([Piece() for _ in range(8)])
+    self.pieces += [Pawn('white') for _ in range(8)] + [Rook('white'), Knight('white'), Bishop('white'), Queen('white'), self.kings[0],  Bishop('white'), Knight('white'), Rook('white')]
+    self.board.append(self.pieces[16:24])
+    self.board.append(self.pieces[24:32])
+
+    for row in range(8):
+      for colm in range(8):
+        self.board[row][colm].row = row
+        self.board[row][colm].colm = colm
+
+  def drawBoard(self):
+    black = '#'
+    print('  ' + black*22)
+    for i in range(8):
+      row = black + '  ' + str(8-i) + '  '
+      for j in range(8):
+        token = str(self.board[i][j])
+        if i%2 != j%2:
+          if token == ' ':
+            token = black*2
+          else:
+              token += ' '
+          row += token
+        else:
+          if token == ' ':
+            token = ' '*2
+          else:
+              token += ' '
+          row += token
+          
+      print(row + ' ' + black)
+
+    print(black + '     a b c d e f g h  ' + black)
+    print('  ' + black*22)
+
+  def movePiece(self, currPos, movePos):
+    self.lastMoves.append((self.board[currPos[0]][currPos[1]], movePos))
+    if len(self.lastMoves) > 9: 
+      self.lastMoves.pop(0) 
+
+    if self.board[movePos[0]][movePos[1]].color == 'black':
+      self.pieces.remove(self.board[movePos[0]][movePos[1]])
+    elif self.board[movePos[0]][movePos[1]].color == 'white':
+      self.pieces.remove(self.board[movePos[0]][movePos[1]])
+
+    self.board[movePos[0]][movePos[1]] = self.board[currPos[0]][currPos[1]]
+    self.board[movePos[0]][movePos[1]].row, self.board[movePos[0]][movePos[1]].colm = movePos[0], movePos[1]
+
+    self.board[currPos[0]][currPos[1]] = Piece()
+
+  def gameDrawn(self):
+    if len(self.pieces) == 2:
+      return True, 'Not enough pieces on the board'
+    if len(self.pieces) == 3 and Bishop in self.pieces:
+      return True, 'Not enough pieces on the board'
+    if len(self.pieces) == 3 and Knight in self.pieces:
+      return True, 'Not enough pieces on the board'
+    if len(self.lastMoves) >= 9:
+      return all(move == self.lastMoves[0] for move in self.lastMoves[::4]), 'When three of the same move is played, the game ends in a draw.'
+
+    return False, None
+
+class Player:
+  def __init__(self, color):
+    self.color = color
+
+  def handleInput(self, move):
+    letters = {
+      'a': 0,
+      'b': 1,
+      'c': 2,
+      'd': 3,
+      'e': 4,
+      'f': 5,
+      'g': 6,
+      'h': 7
+    }
+    move = move.strip().lower().split(',')
+    currPos = (8-int(move[0][1]), letters[move[0][0]])
+    movePos = (8-int(move[-1][-1]), letters[move[-1][-2]])
+    return currPos, movePos
+
+  def checkMoveErrors(self, king, currPos, movePos, board, kingChecked):
+    if currPos == (king.row, king.colm) and king.isChecked(board, movePos):
+      raise Exception('Invalid move, you must move the king to a location that is not in check.')
+    if kingChecked and currPos != (king.row, king.colm):
+      board = simulateMove(board, currPos, movePos)
+      if king.isChecked(board):
+        board =  simulateMove(board, movePos, currPos)
+        raise Exception('Invalid move, the king is still checked')
+
+  def makeMove(self, board, king, kingChecked):
+    print()
+    print(f'It is {self.color}\'s turn.')
+    if kingChecked:
+      print('Watch out! Your king is checked!')
+      print('You can either move the king, block the piece checking it, or kill the piece checking it.\n')
+    while True:
+      try:
+        move = input('Enter your move: ')
+        if move.lower() == 'resign':
+          return 'resigning', False
+        if move.lower() == 'draw':
+          return 'drawing', False
+        currPos, movePos = self.handleInput(move)
+
+        availableMoves = board[currPos[0]][currPos[1]].availableMoves(board)
+
+        if movePos in availableMoves and board[currPos[0]][currPos[1]].color == self.color:
+          self.checkMoveErrors(king, currPos, movePos, board, kingChecked)
+          break
+        else:
+          raise Exception('Invalid move, try again.')
+      except Exception as e:
+        if str(e)[0:12] == 'Invalid move':
+          print(e)
+        else:
+          print('Invalid move, most likely input is formatted wrong.')
+
+    return currPos, movePos
+
+def menu():
+  clear()
+  print('     Welcome to Chess! \n')
+  print('''Options:
+1. Play the Game!
+2. How to Play\n''')
+  while True:
+    choice = input('Enter option > ').strip()
+    if choice == '1':
+      game()
+      break
+    elif choice == '2':
+      howToPlay()
+      break
+    else:
+      print('Invalid, try again')
+
+def gameover(won, pieces, turns, winner=None, reason=None):
+  print('\n\nGAME OVER')
+  if won:
+    print(f'Good job {winner.color}, you won!')
+  else:
+    print('No one won. It\'s a draw!')
+    print(reason)
+
+  print(f'''
+Stats:
+White had {len([p for p in pieces if p.color == 'white'])} pieces left.
+Black had {len([p for p in pieces if p.color == 'black'])} pieces left.
+In total there was {turns} turns.\n''')
+
+  choice = input('Enter choice (menu/play again) > ').strip().lower()
+  if choice == 'menu':
+    menu()
+  elif choice == 'play again':
+    game()
+
+def howToPlay():
+  clear()
+  print('How to Play Chess: The Basics')
+  print('''
+- In chess there are two players, white and black. White always goes first. 
+- The goal of the game is to checkmate the king, which means you trap it.
+
+- There are 6 different pieces that all move in unique ways:
+      Pawn: Moves one square at a time forward, except on first turn 
+      where it can move two. Attacks one square diagonally
+      Rook: Moves up, down, left, or right.
+      Bishop: Moves diagonally.
+      Knight: The only piece that can jump over others, moves in a L shape
+      Queen: Moves diagonally and up, down, left, and right (Rook + Bishop)
+      King: Moves one square in each direction
+
+- You can't kill the king, only trap it
+- If the king is checked it means a piece from the other team is attacking 
+it and you can either block the attack, kill the piece attacking or move 
+the king
+- If you can't do any of these you lose (checkmated)
+- To enter move, write in this format: d2,d4 where d2 is the current
+  position of the piece and d4 is the position you want to move it to. 
+- At any point you can resign to the other player by typing 'resign'
+- If you and the other person agree to draw type 'draw'
+
+- If one of your pawns reach the other side of the board, you can promote
+it (turn it into) a queen, rook, bishop, or knight.
+''')
+  input('Press enter to return to the menu\n')
+  menu()
+
+def game():
+  clear()
+  print('''- To enter move, write in this format: d2,d4 where d2 is the current
+  position of the piece and d4 is the position you want to move it to. 
+- To resign type 'resign'
+- To agree to draw type 'draw' (can only do this once per turn)
+- White goes first so good luck!''')
+  boardC = Board()
+
+  kingChecked = [False, False]
+  kingCheckmated = [False, False]
+  kingStalemated = [False, False]
+  players = [Player('white'), Player('black')]
+
+  turn = 0
+  while True:
+    currPlayer = players[turn%2]
+
+    for king in range(len(boardC.kings)):
+      kingChecked[king] = boardC.kings[king].isChecked(boardC.board)
+      if kingChecked[king]:
+        kingCheckmated[king] = boardC.kings[king].inCheckmateGameOver(boardC.board)
+        if kingCheckmated[king]:
+          boardC.drawBoard()
+          gameover(True, boardC.pieces, turn, players[king])
+          return 
+      else:
+        kingStalemated[king] = boardC.kings[king].isStalemated(boardC.board, turn)
+
+    boardC.drawBoard()
+
+    if boardC.gameDrawn()[0] or True in kingStalemated:
+      gameover(False, boardC.pieces, turn, reason=boardC.gameDrawn()[1])
+      return
+    if True in kingStalemated:
+      gameover(False, boardC.pieces, turn, reason='The game ended in a stalemate.')
+
+    currPos, movePos = currPlayer.makeMove(boardC.board, boardC.kings[turn%2], kingChecked[turn%2])
+
+    if currPos == 'resigning':
+      gameover(True, boardC.pieces, turn, players[(turn+1)%2])
+      return 
+
+    if currPos == 'drawing':
+      isDraw = input(f'{players[(turn+1)%2].color.capitalize()} player, do you want to agree to draw? (y/n) ').strip().lower()
+      if isDraw == 'y':
+        gameover(False, boardC.pieces, turn, reason='Both players agreed to end the game.')
+        return
+      else:
+        currPos, movePos = currPlayer.makeMove(boardC.board, boardC.kings[turn%2], kingChecked[turn%2])
+
+
+    boardC.movePiece(currPos, movePos)
+
+    if (movePos[0] == 7 or movePos[0] == 0) and boardC.board[movePos[0]][movePos[1]].type == 'p':
+      boardC.board[movePos[0]][movePos[1]].promote(boardC.board, boardC.pieces)
+
+    turn += 1
+    clear()
+
+
+if __name__ == '__main__':
+    menu()
+    
+
+
+
+****************   chess.py  *************
+
+import itertools
+
+cardinalMoves = [(0, 1), (1, 0), (-1, 0), (0, -1)]
+diagonalMoves = [(1, -1), (-1, 1), (1, 1), (-1, -1)]
+symbols = {'white':{'k':'♔', 'q':'♕', 'r': '♖', 'b': '♗', 'n': '♘', 'p': '♙'},
+           'black':{'k':'♚', 'q':'♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'}}
+symbols = []
+
+def simulateMove(board, currPos, movePos):
+  newBoard = [i[:] for i in board]
+  newBoard[movePos[0]][movePos[1]] = newBoard[currPos[0]][currPos[1]]
+  newBoard[currPos[0]][currPos[1]] = Piece()
+  return newBoard
+
+class Piece:
+  def __init__(self, color=None, type=None):
+    self.color = color
+    self.type = type
+    self.sym = ' '
+    if self.color == 'white':
+      self.enemy = 'black'
+      self.sym = self.type.lower()#symbols[self.color][self.type]
+    elif self.color == 'black':
+      self.enemy = 'white'
+      self.sym = self.type.upper()#symbols[self.color][self.type]
+    
+      
+    self.row = 0
+    self.colm = 0
+
+  def __str__(self):
+    return self.sym
+
+  def inBounds(self, x, y):
+    if 0 <= x <= 7 and 0 <= y <= 7:
+      return True
+    return False
+
+  def getAvailableMoves(self, currPos, movement, board):
+    moves = []
+    for xadd, yadd in movement:
+      xtemp, ytemp = currPos[0] + xadd, currPos[1] + yadd
+      while self.inBounds(xtemp, ytemp):
+        if board[xtemp][ytemp].color != self.color:
+          moves.append((xtemp, ytemp))
+          if board[xtemp][ytemp].color == self.enemy:
+            break
+        else:
+          break
+        xtemp += xadd
+        ytemp += yadd
+
+
+    return moves
+
+class Pawn(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'p')
+    if self.color == 'white':
+      self.movement = -1
+    else:
+      self.movement = 1
+
+  def attackMoves(self, board):
+    moves = []
+    
+    if self.inBounds(self.colm+1, self.row+self.movement) and board[self.row+self.movement][self.colm+1].color == self.enemy:
+      moves.append((self.row+self.movement, self.colm+1))
+
+    if self.inBounds(self.colm-1, self.row+self.movement) and board[self.row+self.movement][self.colm-1].color == self.enemy:
+      moves.append((self.row+self.movement, self.colm-1)) 
+      
+    return moves
+      
+  def availableMoves(self, board):
+    # Pawn: Two forward first, than one rest of game
+    # Attacks diagonally foward
+    moves = [] 
+    stop = 2
+    if 3.5-self.row == self.movement*2.5:
+      stop = 3
+    for i in range(1, stop):
+      if self.inBounds(self.colm, self.row+self.movement*i):
+        if board[self.row+self.movement*i][self.colm].color == None:
+          moves.append((self.row+self.movement*i, self.colm))
+
+    moves += self.attackMoves(board)
+
+    return moves
+
+  def promote(self, board, pieces):
+    if self.row == 7 or self.row == 0:
+      type = input('Do you want to promote this pawn to a Queen, Knight, Bishop, or Rook? ').strip().lower()
+      index = pieces.index(board[self.row][self.colm])
+      if type == 'queen':
+        board[self.row][self.colm] = Queen(self.color)
+      elif type == 'knight':
+        board[self.row][self.colm] = Knight(self.color)
+      elif type == 'bishop':
+        board[self.row][self.colm] = Bishop(self.color)
+      elif type == 'rook':
+        board[self.row][self.colm] = Rook(self.color)
+    pieces[index] = board[self.row][self.colm]
+    board[self.row][self.colm].row, board[self.row][self.colm].colm = self.row, self.colm
+
+class Rook(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'r')
+
+  def availableMoves(self, board):
+    return self.getAvailableMoves((self.row, self.colm), cardinalMoves, board)
+
+class Bishop(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'b')
+
+  def availableMoves(self, board):
+    return self.getAvailableMoves((self.row, self.colm), diagonalMoves, board)
+
+class Knight(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'n')
+
+  def availableMoves(self, board):
+    possibleMoves = [m for m in list(itertools.permutations([-2, -1, 1, 2], 2)) if abs(m[0]) != abs(m[1])]
+    moves = []
+    for move in possibleMoves:
+      if -1 < self.row+move[0] < 8 and -1 < self.colm+move[1] < 8:
+        if board[self.row+move[0]][self.colm+move[1]].color != self.color:
+          moves.append((self.row+move[0], self.colm+move[1]))
+    return moves
+
+class Queen(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'q')  
+
+  def availableMoves(self, board):
+    return self.getAvailableMoves((self.row, self.colm), cardinalMoves+diagonalMoves, board)
+
+class King(Piece):
+  def __init__(self, color):
+    super().__init__(color, 'k')
+    self.enemies = []
+    self.friends = []
+
+  def availableMoves(self, board):
+    possibleMoves = [m for m in list(itertools.permutations([-1, 0, 1], 2))]
+    possibleMoves += [(1, 1), (-1, -1)]
+    moves = []
+    for move in possibleMoves:
+      if self.inBounds(self.colm+move[1], self.row+move[0]):
+        if board[self.row+move[0]][self.colm+move[1]].color != self.color:
+          moves.append((self.row+move[0], self.colm+move[1]))
+    return moves 
+
+  def isChecked(self, board, pos=None):
+    self.enemies = [colm for row in board for colm in row if colm.color == self.enemy]
+    capturing = False
+
+    if pos is None:
+      pos = (self.row, self.colm)
+
+    if board[pos[0]][pos[1]].color == self.enemy:
+      capturing = True
+
+    if capturing: 
+      tempPiece = board[pos[0]][pos[1]]
+      board[pos[0]][pos[1]] = Piece()
+
+    for e in self.enemies:
+      if isinstance(e, Pawn):
+        if pos[0]-e.row == 1*e.movement and abs(pos[1]-e.colm) == 1:
+          if capturing: 
+            board[pos[0]][pos[1]] = tempPiece
+          return True
+      else:
+        if pos in e.availableMoves(board):      
+          if capturing:
+            board[pos[0]][pos[1]] = tempPiece
+          return True
+        
+    if capturing: 
+      board[pos[0]][pos[1]] = tempPiece
+    return False
+
+  def isCheckmated(self, board):
+    for move in self.availableMoves(board) + [(self.row, self.colm)]:
+      if not self.isChecked(board, move):
+        return False
+    return True
+
+  def inCheckmateGameOver(self, board):
+    self.friends = [colm for row in board for colm in row if colm.color == self.color]
+    if self.isCheckmated(board):
+      for friend in self.friends:
+        for move in friend.availableMoves(board):
+          board = simulateMove(board, (friend.row, friend.colm), move)
+          if not self.isCheckmated(board):
+            return False
+          board = simulateMove(board, move, (friend.row, friend.colm))
+      return True
+    return False
+
+  def isStalemated(self, board, turn):
+    self.friends = [colm for row in board for colm in row if colm.color == self.color]
+    avalMoves = self.availableMoves(board)
+
+    if turn % 2 == 0:
+      turn = 'white'
+    else:
+      turn = 'black'
+
+    friendMoves = []
+    for f in self.friends:
+      friendMoves += f.availableMoves(board)
+
+    for move in avalMoves:
+      if not self.isChecked(board, move):
+        return False
+    if len(friendMoves) == len(avalMoves) and turn == self.color:
+      return True
+    return False
+
+
+    
